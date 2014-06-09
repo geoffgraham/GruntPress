@@ -1,0 +1,26 @@
+{
+  "name": "boilerplate-project",
+  "version": "0.0.1",
+  "authors": [
+    "Geoff Graham <geoff@geoffgraham.me>"
+  ],
+  "description": "A starter project template",
+  "license": "MIT",
+  "homepage": "geoffgraham.me",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.0",
+    "modernizr": "~2.8.2",
+    "bourbon": "~4.0.1",
+    "neat": "~1.6.0",
+    "FitText.js": "~1.6.0",
+    "Lettering.js": "~1.2",
+  }
+}

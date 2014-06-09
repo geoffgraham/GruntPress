@@ -1,0 +1,8 @@
+/* This site was designed and developed by Geoff Graham straight outta Long Beach, CA. */
+/* geoffgraham.me */
+/* humanstxt.org */
+
+/* SITE */
+  Standards: HTML5, CSS3
+  Components: SASS, jQuery, Bourbon, Modernizr, Autoprefixr
+  Software: Coda, Grunt, Git

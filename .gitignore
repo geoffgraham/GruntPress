@@ -1,0 +1,27 @@
+# Ignore system and config files
+*.DS_Store
+.sass-cache/*
+local-config.php
+
+# Things to ignore in the development directory
+node_modules/
+development/lib/bower_components/FitText.js
+development/lib/bower_components/Lettering.js
+development/lib/fonts/*
+development/lib/images/*
+development/lib/images/svg/*
+development/lib/javascripts/*
+development/lib/styles/css/*
+development/lib/styles/scss/*
+
+# Ignore everything in the "wp-content" directory, except "plugins" and "themes"
+wp-content/*
+!wp-content/plugins/
+!wp-content/themes/
+
+# Things to ignore in both development and production
+production/wp-content/themes/BlankPress/lib/fonts/*
+production/wp-content/themes/BlankPress/lib/images/*
+production/wp-content/themes/BlankPress/lib/images/svg/*
+production/wp-content/themes/BlankPress/lib/javascripts/*
+production/wp-content/themes/BlankPress/lib/styles/css/*

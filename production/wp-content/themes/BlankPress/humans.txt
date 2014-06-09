@@ -1,0 +1,10 @@
+/* humanstxt.org */
+
+/* BLANKPRESS THEME */
+/* by Geoff Graham */
+/* geoffgraham.me */
+/* ---------------------------------- */
+
+  CMS: WordPress
+  Frameworks: Bourbon, Bourbon Neat
+  Software: Coda, Git, Bower

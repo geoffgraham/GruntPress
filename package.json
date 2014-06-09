@@ -1,0 +1,22 @@
+{
+  "name": "project-name",
+  "version": "0.1.0",
+  "devDependencies": {
+    "grunt": "~0.4.4",
+    "grunt-cli": "^0.1.13",
+    "grunt-autoprefixer": "^0.7.2",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-svgstore": "0.0.3",
+    "grunt-contrib-imagemin": "^0.6.1",
+    "grunt-contrib-connect": "^0.7.1",
+    "load-grunt-config": "^0.8.0",
+    "grunt-contrib-sass": "^0.7.3",
+    "grunt-contrib-cssmin": "^0.9.0",
+    "grunt-contrib-concat": "^0.4.0",
+    "grunt-contrib-uglify": "^0.4.0",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-perfbudget": "^0.1.2",
+    "grunt-contrib-copy": "^0.5.0",
+    "grunt-modernizr": "^0.5.2"
+  }
+}
