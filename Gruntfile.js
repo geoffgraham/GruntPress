@@ -33,9 +33,6 @@ module.exports = function(grunt) {
   // We can start MAMP to view Production if we want
   grunt.registerTask('prod', ['connect:prod']);
   
-  // Let's test the performance of our work
-  grunt.registerTask('perf', ['perfbudget']);
-  
   // Turn those SVGs into a sprite
   grunt.registerTask('svg', ['svgstore']);
 
