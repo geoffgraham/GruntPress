@@ -4,7 +4,7 @@ module.exports = {
       'development/lib//bower_components/jquery/dist/jquery.min.js',
       'development/lib//bower_components/FitText.js/jquery.fittext.js',
       'development/lib//bower_components/Lettering.js/jquery.lettering.js',
-      'development/lib//javascripts/source/*.js',
+      'development/lib//javascripts/*.js',
     ],
     dest: 'development/lib//javascripts/production/global.js'
   }

@@ -22,7 +22,7 @@ module.exports = function(grunt) {
   require('load-grunt-config')(grunt);
   
   // Register default task
-  grunt.registerTask('default', ['connect:dev','watch']);
+  grunt.registerTask('default', ['connect:dev','watch','concat']);
   
   // Let's process things for production
   grunt.registerTask('process', ['concat', 'uglify', 'sass', 'autoprefixer', 'cssmin', 'modernizr', 'imagemin']);
