@@ -3,7 +3,7 @@ module.exports = {
     livereload: true,
   },
   scripts: {
-    files: ['development/lib/javascripts/*.js'],
+    files: ['development/lib/javascripts/source/*.js', 'development/lib/bower_components/**/*/*.js'],
     tasks: ['jshint', 'concat', 'uglify'],
     options: {
       spawn: false,
