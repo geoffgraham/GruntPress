@@ -3,28 +3,28 @@ module.exports = {
     livereload: true,
   },
   scripts: {
-    files: ['development/lib//javascripts/*.js'],
+    files: ['development/lib/javascripts/*.js'],
     tasks: ['jshint', 'concat', 'uglify'],
     options: {
       spawn: false,
     },
   },
   css: {
-    files: ['development/lib//styles/scss/*.scss','development/lib//styles/scss/**/*.scss' ],
+    files: ['development/lib/styles/scss/*.scss','development/lib//styles/scss/**/*.scss' ],
     tasks: ['sass', 'autoprefixer', 'cssmin'],
     options: {
       spawn: false,
     },
   },
   images: {
-    files: ['development/lib//images/*.{png,jpg,gif}'],
+    files: ['development/lib/images/*.{png,jpg,gif}'],
     tasks: ['imagemin'],
     options: {
       spawn: false,
     },
   },
   svg: {
-    files: ['development/lib//images/svg/source/*.{svg}'],
+    files: ['development/lib/images/svg/source/*.{svg}'],
     tasks: ['svgstore'],
     options: {
       spawn: false,
