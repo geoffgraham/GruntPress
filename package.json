@@ -15,7 +15,6 @@
     "grunt-contrib-concat": "^0.4.0",
     "grunt-contrib-uglify": "^0.4.0",
     "grunt-contrib-jshint": "^0.10.0",
-    "grunt-perfbudget": "^0.1.2",
     "grunt-contrib-copy": "^0.5.0",
     "grunt-modernizr": "^0.5.2"
   }
