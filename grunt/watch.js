@@ -24,7 +24,7 @@ module.exports = {
     },
   },
   svg: {
-    files: ['development/lib/images/svg/source/*.{svg}'],
+    files: ['development/lib/images/svg/source/*.svg'],
     tasks: ['svgstore'],
     options: {
       spawn: false,
