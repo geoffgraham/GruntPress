@@ -24,6 +24,12 @@ module.exports = function(grunt) {
   // Register default task
   grunt.registerTask('default', ['connect:dev','watch']);
   
+  // Connect to a PHP dev server, if needed
+  grunt.registerTask('phpwatch', ['php:dev', 'watch']);
+  
+  // Connect to a PHP production server, if needed
+  grunt.registerTask('phpwatch:prod', ['php:prod', 'watch']);
+  
   // Let's process things for production
   grunt.registerTask('process', ['concat', 'uglify', 'sass', 'autoprefixer', 'cssmin', 'modernizr', 'imagemin']);
   
