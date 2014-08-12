@@ -33,6 +33,14 @@ module.exports = function(grunt) {
   // Let's process things for production
   grunt.registerTask('process', ['concat', 'uglify', 'sass', 'autoprefixer', 'cssmin', 'modernizr', 'imagemin']);
   
+  // Or process SASS by itself
+  // Now, let's move things to the Production directory
+  grunt.registerTask('css', ['sass', 'autoprefixer', 'cssmin']);
+  
+  // Or process JS by itself
+  // Now, let's move things to the Production directory
+  grunt.registerTask('js', ['concat', 'uglify']);
+  
   // Now, let's move things to the Production directory
   grunt.registerTask('move', ['copy']);
   
