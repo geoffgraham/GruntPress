@@ -6,11 +6,5 @@ module.exports = {
 			keepalive: true,
 			open: true
 		}
-	},
-	prod: {
-		options: {
-			port: 8002,
-			base: 'production',
-		}
 	}
 }

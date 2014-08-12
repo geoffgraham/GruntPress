@@ -21,16 +21,16 @@ module.exports = function(grunt) {
   // Tasks are configured in partials located in grunt/
   require('load-grunt-config')(grunt);
   
-  // Register default task
+  // By default, connect to a server and watch for changed files
   grunt.registerTask('default', ['connect:dev','watch']);
   
-  // Connect to a PHP dev server, if needed
-  grunt.registerTask('phpwatch', ['php:dev', 'watch']);
+  // We can start MAMP then run this task to view Production
+  grunt.registerTask('prod', ['connect:prod']);
   
-  // Connect to a PHP production server, if needed
-  grunt.registerTask('phpwatch:prod', ['php:prod', 'watch']);
+  // If we're working with PHP files in Development, connect to this server as well
+  grunt.registerTask('phpserver', ['php:dev', 'watch']);
   
-  // Let's process things for production
+  // Let's process our development files for Production
   grunt.registerTask('process', ['concat', 'uglify', 'sass', 'autoprefixer', 'cssmin', 'modernizr', 'imagemin']);
   
   // Or process SASS by itself
@@ -38,14 +38,10 @@ module.exports = function(grunt) {
   grunt.registerTask('css', ['sass', 'autoprefixer', 'cssmin']);
   
   // Or process JS by itself
-  // Now, let's move things to the Production directory
   grunt.registerTask('js', ['concat', 'uglify']);
   
-  // Now, let's move things to the Production directory
+  // Now, let's move our assets to the Production directory
   grunt.registerTask('move', ['copy']);
-  
-  // We can start MAMP to view Production if we want
-  grunt.registerTask('prod', ['connect:prod']);
   
   // Turn those SVGs into a sprite
   grunt.registerTask('svg', ['svgstore']);
