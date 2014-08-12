@@ -18,37 +18,37 @@ These are what are currently available.
 
 Command: `grunt`
 
-What it runs: `connect` and `watch`
+**What it runs:** `connect` and `watch`
 
-What it does: `connect` will start a server and open for you in a new browser window. `watch` looks for file changes and automatically refreshes the browser window for you.
+**What it does:** `connect` will start a server and open for you in a new browser window. `watch` looks for file changes and automatically refreshes the browser window for you.
 
 ### Prod
 
 Command: `prod`
 
-What it runs: `connect:prod`
+**What it runs:** `connect:prod`
 
-What it does: This runs another `connect` command that starts a new server and open a new browser window that allows you to preview your production build.
+**What it does:** This runs another `connect` command that starts a new server and open a new browser window that allows you to preview your production build.
 
 OK, this gets a little funky. What I would like to do here is have `connect` start a PHP-friendly server in order to view my working WordPress installation, but it isn't there yet. So, for now, I recommend running MAMP and running a typical WordPress installation before running this command. It's not perfect, but does work.
 
 [Here is a workaround](http://robandlauren.com/2014/02/05/live-reload-grunt-wordpress/) using `wp_enqueue_script` if that's your flavor.
 
-### PHPSERVER
+### PHPServer
 
-What it runs: `php:dev` and `watch`
+**What it runs:** `php:dev` and `watch`
 
-What it does: Connects to a PHP server. This is necessary if we are working with PHP files in the development directory since `connect` cannot process PHP things like `includes`.
+**What it does:** Connects to a PHP server. This is necessary if we are working with PHP files in the development directory since `connect` cannot process PHP things like `includes`.
 
-What it does not do: This is not the same as MAMP, which includes MySQL and phpMyAdmin. This task only allows us to write with PHP but does nothing for databases.
+**What it does not do:** This is not the same as MAMP, which includes MySQL and phpMyAdmin. This task only allows us to write with PHP but does nothing for databases.
 
 ### Process
 
 Command: `process`
 
-What it runs: `concat`, `uglify`, `sass`, `autoprefixer`, `cssmin`, `modernizr`, `imagemin`
+**What it runs:** `concat`, `uglify`, `sass`, `autoprefixer`, `cssmin`, `modernizr`, `imagemin`
 
-What it does: This command prepares all the files in the `development` directory for production. Here is a breakdown of everything it does:
+**What it does:** This command prepares all the files in the `development` directory for production. Here is a breakdown of everything it does:
 
 * `concat`: Concatenates all Javascript files into a single output file
 * `uglify`: Minifies the output Javascript file
@@ -62,27 +62,31 @@ What it does: This command prepares all the files in the `development` directory
 
 Command: `move`
 
-What it runs: `copy`
+**What it runs:** `copy`
 
-What it does: This moves your processed and optimized files from the `development` directory to `production`.
+**What it does:** This moves your processed and optimized files from the `development` directory to `production`.
 
 ### CSS
 
-What it runs: `sass`, `autoprefixer`, `cssmin`
+Command: `css`
 
-What it does: This command allows us to process just our SASS files instead of the whole kit and kaboodle like `process` does.
+**What it runs:** `sass`, `autoprefixer`, `cssmin`
+
+**What it does:** This command allows us to process just our SASS files instead of the whole kit and kaboodle like `process` does.
 
 ### JS
 
-What it runs: `concat` and `uglify`
+Command: `js`
 
-What it does: This command allows us to process JS files separately from everything else.
+**What it runs:** `concat` and `uglify`
+
+**What it does:** This command allows us to process JS files separately from everything else.
 
 ### SVG
 
-What it runs: `svgstore`
+**What it runs:** `svgstore`
 
-What it does: This command merges SVG files in the `development` directory into a single `defs` file, according to Chris Coyier's [SVG icon system](http://css-tricks.com/svg-sprites-use-better-icon-fonts/).
+**What it does:** This command merges SVG files in the `development` directory into a single `defs` file, according to Chris Coyier's [SVG icon system](http://css-tricks.com/svg-sprites-use-better-icon-fonts/).
 
 ## Contributing
 
