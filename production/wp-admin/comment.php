@@ -56,7 +56,7 @@ case 'editcomment' :
 	get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
 	'<p>' . __( '<a href="http://codex.wordpress.org/Administration_Screens#Comments" target="_blank">Documentation on Comments</a>' ) . '</p>' .
-	'<p>' . __( '<a href="http://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
+	'<p>' . __( '<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
 	);
 
 	wp_enqueue_script('comment');
@@ -111,7 +111,7 @@ case 'spam'    :
 	$nonce_action .= $comment_id;
 
 ?>
-<div class='wrap'>
+<div class="wrap">
 
 <div class="narrow">
 
@@ -174,14 +174,14 @@ if ( $comment->comment_approved != '0' ) { // if not unapproved
 </tr>
 <?php } ?>
 <tr>
-<th scope="row" valign="top"><?php /* translators: field name in comment form */ _ex('Comment', 'noun'); ?></th>
+<th scope="row"><?php /* translators: field name in comment form */ _ex('Comment', 'noun'); ?></th>
 <td><?php echo $comment->comment_content; ?></td>
 </tr>
 </table>
 
 <p><?php _e('Are you sure you want to do this?'); ?></p>
 
-<form action='comment.php' method='get'>
+<form action="comment.php" method="get">
 
 <table width="100%">
 <tr>
@@ -191,9 +191,9 @@ if ( $comment->comment_approved != '0' ) { // if not unapproved
 </table>
 
 <?php wp_nonce_field( $nonce_action ); ?>
-<input type='hidden' name='action' value='<?php echo esc_attr($formaction); ?>' />
-<input type='hidden' name='c' value='<?php echo esc_attr($comment->comment_ID); ?>' />
-<input type='hidden' name='noredir' value='1' />
+<input type="hidden" name="action" value="<?php echo esc_attr($formaction); ?>" />
+<input type="hidden" name="c" value="<?php echo esc_attr($comment->comment_ID); ?>" />
+<input type="hidden" name="noredir" value="1" />
 </form>
 
 </div>
@@ -266,7 +266,6 @@ case 'unapprovecomment' :
 
 	wp_redirect( $redir );
 	die;
-	break;
 
 case 'editedcomment' :
 
@@ -291,11 +290,9 @@ case 'editedcomment' :
 	wp_redirect( $location );
 
 	exit();
-	break;
 
 default:
 	wp_die( __('Unknown action.') );
-	break;
 
 } // end switch
 

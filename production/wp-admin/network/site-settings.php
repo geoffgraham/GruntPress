@@ -30,7 +30,7 @@ get_current_screen()->add_help_tab( array(
 get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
 	'<p>' . __('<a href="http://codex.wordpress.org/Network_Admin_Sites_Screen" target="_blank">Documentation on Site Management</a>') . '</p>' .
-	'<p>' . __('<a href="http://wordpress.org/support/forum/multisite/" target="_blank">Support Forums</a>') . '</p>'
+	'<p>' . __('<a href="https://wordpress.org/support/forum/multisite/" target="_blank">Support Forums</a>') . '</p>'
 );
 
 $id = isset( $_REQUEST['id'] ) ? intval( $_REQUEST['id'] ) : 0;
@@ -113,7 +113,14 @@ if ( ! empty( $messages ) ) {
 	<table class="form-table">
 		<?php
 		$blog_prefix = $wpdb->get_blog_prefix( $id );
-		$options = $wpdb->get_results( "SELECT * FROM {$blog_prefix}options WHERE option_name NOT LIKE '\_%' AND option_name NOT LIKE '%user_roles'" );
+		$sql = "SELECT * FROM {$blog_prefix}options
+			WHERE option_name NOT LIKE %s
+			AND option_name NOT LIKE %s";
+		$query = $wpdb->prepare( $sql,
+			$wpdb->esc_like( '_' ) . '%',
+			'%' . $wpdb->esc_like( 'user_roles' )
+		);
+		$options = $wpdb->get_results( $query );
 		foreach ( $options as $option ) {
 			if ( $option->option_name == 'default_role' )
 				$editblog_default_role = $option->option_value;

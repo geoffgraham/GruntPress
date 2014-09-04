@@ -160,10 +160,10 @@ function _get_plugin_data_markup_translate( $plugin_file, $plugin_data, $markup 
 	// Apply markup
 	if ( $markup ) {
 		if ( $plugin_data['PluginURI'] && $plugin_data['Name'] )
-			$plugin_data['Title'] = '<a href="' . $plugin_data['PluginURI'] . '" title="' . esc_attr__( 'Visit plugin homepage' ) . '">' . $plugin_data['Name'] . '</a>';
+			$plugin_data['Title'] = '<a href="' . $plugin_data['PluginURI'] . '">' . $plugin_data['Name'] . '</a>';
 
 		if ( $plugin_data['AuthorURI'] && $plugin_data['Author'] )
-			$plugin_data['Author'] = '<a href="' . $plugin_data['AuthorURI'] . '" title="' . esc_attr__( 'Visit author homepage' ) . '">' . $plugin_data['Author'] . '</a>';
+			$plugin_data['Author'] = '<a href="' . $plugin_data['AuthorURI'] . '">' . $plugin_data['Author'] . '</a>';
 
 		$plugin_data['Description'] = wptexturize( $plugin_data['Description'] );
 
@@ -537,11 +537,17 @@ function activate_plugin( $plugin, $redirect = '', $network_wide = false, $silen
 		if ( !empty($redirect) )
 			wp_redirect(add_query_arg('_error_nonce', wp_create_nonce('plugin-activation-error_' . $plugin), $redirect)); // we'll override this later if the plugin can be included without fatal error
 		ob_start();
-		include_once(WP_PLUGIN_DIR . '/' . $plugin);
+		wp_register_plugin_realpath( WP_PLUGIN_DIR . '/' . $plugin );
+		$_wp_plugin_file = $plugin;
+		include_once( WP_PLUGIN_DIR . '/' . $plugin );
+		$plugin = $_wp_plugin_file; // Avoid stomping of the $plugin variable in a plugin.
 
 		if ( ! $silent ) {
 			/**
-			 * Fires before a plugin is activated in activate_plugin() when the $silent parameter is false.
+			 * Fires before a plugin is activated.
+			 *
+			 * If a plugin is silently activated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.9.0
 			 *
@@ -552,10 +558,14 @@ function activate_plugin( $plugin, $redirect = '', $network_wide = false, $silen
 			do_action( 'activate_plugin', $plugin, $network_wide );
 
 			/**
-			 * Fires before a plugin is activated in activate_plugin() when the $silent parameter is false.
+			 * Fires as a specific plugin is being deactivated.
 			 *
-			 * The action concatenates the 'activate_' prefix with the $plugin value passed to
-			 * activate_plugin() to create a dynamically-named action.
+			 * This hook is the "deactivation" hook used internally by
+			 * register_deactivation_hook(). The dynamic portion of the
+			 * hook name, $plugin. refers to the plugin basename.
+			 *
+			 * If a plugin is silently activated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.0.0
 			 *
@@ -576,7 +586,10 @@ function activate_plugin( $plugin, $redirect = '', $network_wide = false, $silen
 
 		if ( ! $silent ) {
 			/**
-			 * Fires after a plugin has been activated in activate_plugin() when the $silent parameter is false.
+			 * Fires after a plugin has been activated.
+			 *
+			 * If a plugin is silently activated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.9.0
 			 *
@@ -625,8 +638,10 @@ function deactivate_plugins( $plugins, $silent = false, $network_wide = null ) {
 
 		if ( ! $silent ) {
 			/**
-			 * Fires for each plugin being deactivated in deactivate_plugins(), before deactivation
-			 * and when the $silent parameter is false.
+			 * Fires before a plugin is deactivated.
+			 *
+			 * If a plugin is silently deactivated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.9.0
 			 *
@@ -656,11 +671,14 @@ function deactivate_plugins( $plugins, $silent = false, $network_wide = null ) {
 
 		if ( ! $silent ) {
 			/**
-			 * Fires for each plugin being deactivated in deactivate_plugins(), after deactivation
-			 * and when the $silent parameter is false.
+			 * Fires as a specific plugin is being deactivated.
 			 *
-			 * The action concatenates the 'deactivate_' prefix with the plugin's basename
-			 * to create a dynamically-named action.
+			 * This hook is the "deactivation" hook used internally by
+			 * register_deactivation_hook(). The dynamic portion of the
+			 * hook name, $plugin. refers to the plugin basename.
+			 *
+			 * If a plugin is silently deactivated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.0.0
 			 *
@@ -670,14 +688,16 @@ function deactivate_plugins( $plugins, $silent = false, $network_wide = null ) {
 			do_action( 'deactivate_' . $plugin, $network_deactivating );
 
 			/**
-			 * Fires for each plugin being deactivated in deactivate_plugins(), after deactivation
-			 * and when the $silent parameter is false.
+			 * Fires after a plugin is deactivated.
+			 *
+			 * If a plugin is silently deactivated (such as during an update),
+			 * this hook does not fire.
 			 *
 			 * @since 2.9.0
 			 *
-			 * @param string $plugin               Plugin path to main plugin file with plugin data.
+			 * @param string $plugin               Plugin basename.
 			 * @param bool   $network_deactivating Whether the plugin is deactivated for all sites in the network
-			 *                                     or just the current site. Multisite only. Default is false.
+			 *                                     or just the current site. Multisite only. Default false.
 			 */
 			do_action( 'deactivated_plugin', $plugin, $network_deactivating );
 		}
@@ -699,7 +719,7 @@ function deactivate_plugins( $plugins, $silent = false, $network_wide = null ) {
  *
  * @since 2.6.0
  *
- * @param string|array $plugins
+ * @param string|array $plugins Single plugin or list of plugins to activate.
  * @param string $redirect Redirect to page after successful activation.
  * @param bool $network_wide Whether to enable the plugin for all sites in the network.
  * @param bool $silent Prevent calling activation hooks. Default is false.
@@ -725,18 +745,16 @@ function activate_plugins( $plugins, $redirect = '', $network_wide = false, $sil
 }
 
 /**
- * Remove directory and files of a plugin for a single or list of plugin(s).
- *
- * If the plugins parameter list is empty, false will be returned. True when
- * completed.
+ * Remove directory and files of a plugin for a list of plugins.
  *
  * @since 2.6.0
  *
- * @param array $plugins List of plugin
- * @param string $redirect Redirect to page when complete.
- * @return mixed
+ * @param array  $plugins    List of plugins to delete.
+ * @param string $deprecated Deprecated.
+ * @return bool|null|WP_Error True on success, false is $plugins is empty, WP_Error on failure.
+ *                            Null if filesystem credentials are required to proceed.
  */
-function delete_plugins($plugins, $redirect = '' ) {
+function delete_plugins( $plugins, $deprecated = '' ) {
 	global $wp_filesystem;
 
 	if ( empty($plugins) )
@@ -833,7 +851,7 @@ function delete_plugins($plugins, $redirect = '' ) {
  */
 function validate_active_plugins() {
 	$plugins = get_option( 'active_plugins', array() );
-	// validate vartype: array
+	// Validate vartype: array.
 	if ( ! is_array( $plugins ) ) {
 		update_option( 'active_plugins', array() );
 		$plugins = array();
@@ -849,7 +867,7 @@ function validate_active_plugins() {
 
 	$invalid = array();
 
-	// invalid plugins get deactivated
+	// Invalid plugins get deactivated.
 	foreach ( $plugins as $plugin ) {
 		$result = validate_plugin( $plugin );
 		if ( is_wp_error( $result ) ) {
@@ -921,7 +939,8 @@ function uninstall_plugin($plugin) {
 		unset($uninstallable_plugins);
 
 		define('WP_UNINSTALL_PLUGIN', $file);
-		include WP_PLUGIN_DIR . '/' . dirname($file) . '/uninstall.php';
+		wp_register_plugin_realpath( WP_PLUGIN_DIR . '/' . dirname( $file ) );
+		include( WP_PLUGIN_DIR . '/' . dirname($file) . '/uninstall.php' );
 
 		return true;
 	}
@@ -932,7 +951,8 @@ function uninstall_plugin($plugin) {
 		update_option('uninstall_plugins', $uninstallable_plugins);
 		unset($uninstallable_plugins);
 
-		include WP_PLUGIN_DIR . '/' . $file;
+		wp_register_plugin_realpath( WP_PLUGIN_DIR . '/' . $file );
+		include( WP_PLUGIN_DIR . '/' . $file );
 
 		add_action( 'uninstall_' . $file, $callable );
 
@@ -969,7 +989,7 @@ function uninstall_plugin($plugin) {
  * @param string $icon_url The url to the icon to be used for this menu.
  *     * Pass a base64-encoded SVG using a data URI, which will be colored to match the color scheme.
  *       This should begin with 'data:image/svg+xml;base64,'.
- *     * Pass the name of a Dashicons helper class to use a font icon, e.g. 'dashicons-piechart'.
+ *     * Pass the name of a Dashicons helper class to use a font icon, e.g. 'dashicons-chart-pie'.
  *     * Pass 'none' to leave div.wp-menu-image empty so an icon can be added via CSS.
  * @param int $position The position in the menu order this one should appear
  *
@@ -988,7 +1008,7 @@ function add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $func
 		add_action( $hookname, $function );
 
 	if ( empty($icon_url) ) {
-		$icon_url = 'none';
+		$icon_url = 'dashicons-admin-generic';
 		$icon_class = 'menu-icon-generic ';
 	} else {
 		$icon_url = set_url_scheme( $icon_url );
@@ -1099,14 +1119,16 @@ function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, 
 		return false;
 	}
 
-	// If the parent doesn't already have a submenu, add a link to the parent
-	// as the first item in the submenu. If the submenu file is the same as the
-	// parent file someone is trying to link back to the parent manually. In
-	// this case, don't automatically add a link back to avoid duplication.
+	/*
+	 * If the parent doesn't already have a submenu, add a link to the parent
+	 * as the first item in the submenu. If the submenu file is the same as the
+	 * parent file someone is trying to link back to the parent manually. In
+	 * this case, don't automatically add a link back to avoid duplication.
+	 */
 	if (!isset( $submenu[$parent_slug] ) && $menu_slug != $parent_slug ) {
 		foreach ( (array)$menu as $parent_menu ) {
 			if ( $parent_menu[2] == $parent_slug && current_user_can( $parent_menu[1] ) )
-				$submenu[$parent_slug][] = $parent_menu;
+				$submenu[$parent_slug][] = array_slice( $parent_menu, 0, 4 );
 		}
 	}
 
@@ -1117,11 +1139,15 @@ function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, 
 		add_action( $hookname, $function );
 
 	$_registered_pages[$hookname] = true;
-	// backwards-compatibility for plugins using add_management page. See wp-admin/admin.php for redirect from edit.php to tools.php
+
+	/*
+	 * Backward-compatibility for plugins using add_management page.
+	 * See wp-admin/admin.php for redirect from edit.php to tools.php
+	 */
 	if ( 'tools.php' == $parent_slug )
 		$_registered_pages[get_plugin_page_hookname( $menu_slug, 'edit.php')] = true;
 
-	// No parent as top level
+	// No parent as top level.
 	$_parent_pages[$menu_slug] = $parent_slug;
 
 	return $hookname;
@@ -1412,7 +1438,7 @@ function remove_submenu_page( $menu_slug, $submenu_slug ) {
  *
  * If the slug hasn't been registered properly no url will be returned
  *
- * @since 3.0
+ * @since 3.0.0
  *
  * @param string $menu_slug The slug name to refer to this menu by (should be unique for this menu)
  * @param bool $echo Whether or not to echo the url - default is true
@@ -1460,15 +1486,6 @@ function get_admin_page_parent( $parent = '' ) {
 			$parent = $_wp_real_parent_file[$parent];
 		return $parent;
 	}
-
-	/*
-	if ( !empty ( $parent_file ) ) {
-		if ( isset( $_wp_real_parent_file[$parent_file] ) )
-			$parent_file = $_wp_real_parent_file[$parent_file];
-
-		return $parent_file;
-	}
-	*/
 
 	if ( $pagenow == 'admin.php' && isset( $plugin_page ) ) {
 		foreach ( (array)$menu as $parent_menu ) {

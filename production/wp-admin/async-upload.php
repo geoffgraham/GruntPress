@@ -6,7 +6,13 @@
  * @subpackage Administration
  */
 
-define('WP_ADMIN', true);
+if ( isset( $_REQUEST['action'] ) && 'upload-attachment' === $_REQUEST['action'] ) {
+	define( 'DOING_AJAX', true );
+}
+
+if ( ! defined( 'WP_ADMIN' ) ) {
+	define( 'WP_ADMIN', true );
+}
 
 if ( defined('ABSPATH') )
 	require_once(ABSPATH . 'wp-load.php');
@@ -32,8 +38,7 @@ if ( !current_user_can('upload_files') )
 header('Content-Type: text/html; charset=' . get_option('blog_charset'));
 
 if ( isset( $_REQUEST['action'] ) && 'upload-attachment' === $_REQUEST['action'] ) {
-	define( 'DOING_AJAX', true );
-	include ABSPATH . 'wp-admin/includes/ajax-actions.php';
+	include( ABSPATH . 'wp-admin/includes/ajax-actions.php' );
 
 	send_nosniff_header();
 	nocache_headers();
@@ -81,7 +86,7 @@ if ( isset( $_REQUEST['post_id'] ) ) {
 
 $id = media_handle_upload( 'async-upload', $post_id );
 if ( is_wp_error($id) ) {
-	echo '<div class="error-div">
+	echo '<div class="error-div error">
 	<a class="dismiss" href="#" onclick="jQuery(this).parents(\'div.media-item\').slideUp(200, function(){jQuery(this).remove();});">' . __('Dismiss') . '</a>
 	<strong>' . sprintf(__('&#8220;%s&#8221; has failed to upload due to an error'), esc_html($_FILES['async-upload']['name']) ) . '</strong><br />' .
 	esc_html($id->get_error_message()) . '</div>';
@@ -89,17 +94,17 @@ if ( is_wp_error($id) ) {
 }
 
 if ( $_REQUEST['short'] ) {
-	// short form response - attachment ID only
+	// Short form response - attachment ID only.
 	echo $id;
 } else {
-	// long form response - big chunk o html
+	// Long form response - big chunk o html.
 	$type = $_REQUEST['type'];
 
 	/**
 	 * Filter the returned ID of an uploaded attachment.
 	 *
 	 * The dynamic portion of the hook name, $type, refers to the attachment type,
-	 * such as 'iamge', 'audio', 'video', 'file', etc.
+	 * such as 'image', 'audio', 'video', 'file', etc.
 	 *
 	 * @since 2.5.0
 	 *

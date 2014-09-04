@@ -32,9 +32,10 @@ if ( !function_exists('wp_install') ) :
  * @param bool $public Whether blog is public.
  * @param null $deprecated Optional. Not used.
  * @param string $user_password Optional. User's chosen password. Will default to a random password.
+ * @param string $language Optional. Language chosen.
  * @return array Array keys 'url', 'user_id', 'password', 'password_message'.
  */
-function wp_install( $blog_title, $user_name, $user_email, $public, $deprecated = '', $user_password = '' ) {
+function wp_install( $blog_title, $user_name, $user_email, $public, $deprecated = '', $user_password = '', $language = '' ) {
 	if ( !empty( $deprecated ) )
 		_deprecated_argument( __FUNCTION__, '2.6' );
 
@@ -48,6 +49,10 @@ function wp_install( $blog_title, $user_name, $user_email, $public, $deprecated 
 	update_option('admin_email', $user_email);
 	update_option('blog_public', $public);
 
+	if ( $language ) {
+		update_option( 'WPLANG', $language );
+	}
+
 	$guessurl = wp_guess_url();
 
 	update_option('siteurl', $guessurl);
@@ -56,8 +61,10 @@ function wp_install( $blog_title, $user_name, $user_email, $public, $deprecated 
 	if ( ! $public )
 		update_option('default_pingback_flag', 0);
 
-	// Create default user. If the user already exists, the user tables are
-	// being shared among blogs. Just set the role in that case.
+	/*
+	 * Create default user. If the user already exists, the user tables are
+	 * being shared among blogs. Just set the role in that case.
+	 */
 	$user_id = username_exists($user_name);
 	$user_password = trim($user_password);
 	$email_password = false;
@@ -85,6 +92,15 @@ function wp_install( $blog_title, $user_name, $user_email, $public, $deprecated 
 	wp_new_blog_notification($blog_title, $guessurl, $user_id, ($email_password ? $user_password : __('The password you chose during the install.') ) );
 
 	wp_cache_flush();
+
+	/**
+	 * Fires after a site is fully installed.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param WP_User $user The site owner.
+	 */
+	do_action( 'wp_install', $user );
 
 	return array('url' => $guessurl, 'user_id' => $user_id, 'password' => $user_password, 'password_message' => $message);
 }
@@ -161,7 +177,7 @@ function wp_install_defaults( $user_id ) {
 
 	// Default comment
 	$first_comment_author = __('Mr WordPress');
-	$first_comment_url = 'http://wordpress.org/';
+	$first_comment_url = 'https://wordpress.org/';
 	$first_comment = __('Hi, this is a comment.
 To delete a comment, just log in and view the post&#039;s comments. There you will have the option to edit or delete them.');
 	if ( is_multisite() ) {
@@ -273,7 +289,7 @@ Password: %3\$s
 We hope you enjoy your new site. Thanks!
 
 --The WordPress Team
-http://wordpress.org/
+https://wordpress.org/
 "), $blog_url, $name, $password);
 
 	@wp_mail($email, __('New WordPress Site'), $message);
@@ -317,6 +333,16 @@ function wp_upgrade() {
 		else
 			$wpdb->query( "INSERT INTO {$wpdb->blog_versions} ( `blog_id` , `db_version` , `last_updated` ) VALUES ( '{$wpdb->blogid}', '{$wp_db_version}', NOW());" );
 	}
+
+	/**
+	 * Fires after a site is fully upgraded.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param int $wp_db_version         The new $wp_db_version.
+	 * @param int $wp_current_db_version The old (current) $wp_db_version.
+	 */
+	do_action( 'wp_upgrade', $wp_db_version, $wp_current_db_version );
 }
 endif;
 
@@ -411,8 +437,8 @@ function upgrade_all() {
 	if ( $wp_current_db_version < 26691 )
 		upgrade_380();
 
-	if ( $wp_current_db_version < 26692 )
-		upgrade_383();
+	if ( $wp_current_db_version < 29630 )
+		upgrade_400();
 
 	maybe_disable_link_manager();
 
@@ -449,9 +475,11 @@ function upgrade_100() {
 		}
 	}
 
-	$wpdb->query("UPDATE $wpdb->options SET option_value = REPLACE(option_value, 'wp-links/links-images/', 'wp-images/links/')
-	WHERE option_name LIKE 'links_rating_image%'
-	AND option_value LIKE 'wp-links/links-images/%'");
+	$sql = "UPDATE $wpdb->options
+		SET option_value = REPLACE(option_value, 'wp-links/links-images/', 'wp-images/links/')
+		WHERE option_name LIKE %s
+		AND option_value LIKE %s";
+	$wpdb->query( $wpdb->prepare( $sql, $wpdb->esc_like( 'links_rating_image' ) . '%', $wpdb->esc_like( 'wp-links/links-images/' ) . '%' ) );
 
 	$done_ids = $wpdb->get_results("SELECT DISTINCT post_id FROM $wpdb->post2cat");
 	if ($done_ids) :
@@ -602,8 +630,10 @@ function upgrade_130() {
 
 	$active_plugins = __get_option('active_plugins');
 
-	// If plugins are not stored in an array, they're stored in the old
-	// newline separated format. Convert to new format.
+	/*
+	 * If plugins are not stored in an array, they're stored in the old
+	 * newline separated format. Convert to new format.
+	 */
 	if ( !is_array( $active_plugins ) ) {
 		$active_plugins = explode("\n", trim($active_plugins));
 		update_option('active_plugins', $active_plugins);
@@ -693,14 +723,16 @@ function upgrade_160() {
 		$wpdb->query("ALTER TABLE $wpdb->users DROP $old");
 	$wpdb->show_errors();
 
-	// populate comment_count field of posts table
+	// Populate comment_count field of posts table.
 	$comments = $wpdb->get_results( "SELECT comment_post_ID, COUNT(*) as c FROM $wpdb->comments WHERE comment_approved = '1' GROUP BY comment_post_ID" );
 	if ( is_array( $comments ) )
 		foreach ($comments as $comment)
 			$wpdb->update( $wpdb->posts, array('comment_count' => $comment->c), array('ID' => $comment->comment_post_ID) );
 
-	// Some alpha versions used a post status of object instead of attachment and put
-	// the mime type in post_type instead of post_mime_type.
+	/*
+	 * Some alpha versions used a post status of object instead of attachment
+	 * and put the mime type in post_type instead of post_mime_type.
+	 */
 	if ( $wp_current_db_version > 2541 && $wp_current_db_version <= 3091 ) {
 		$objects = $wpdb->get_results("SELECT ID, post_type FROM $wpdb->posts WHERE post_status = 'object'");
 		foreach ($objects as $object) {
@@ -857,8 +889,10 @@ function upgrade_230() {
 
 	// < 3570 we used linkcategories. >= 3570 we used categories and link2cat.
 	if ( $wp_current_db_version < 3570 ) {
-		// Create link_category terms for link categories. Create a map of link cat IDs
-		// to link_category terms.
+		/*
+		 * Create link_category terms for link categories. Create a map of link
+		 * cat IDs to link_category terms.
+		 */
 		$link_cat_id_map = array();
 		$default_link_cat = 0;
 		$tt_ids = array();
@@ -966,7 +1000,7 @@ function upgrade_230_old_tables() {
  * @since 2.2.0
  */
 function upgrade_old_slugs() {
-	// upgrade people who were using the Redirect Old Slugs plugin
+	// Upgrade people who were using the Redirect Old Slugs plugin.
 	global $wpdb;
 	$wpdb->query("UPDATE $wpdb->postmeta SET meta_key = '_wp_old_slug' WHERE meta_key = 'old_slug'");
 }
@@ -1084,9 +1118,28 @@ function upgrade_300() {
 
 	// 3.0 screen options key name changes.
 	if ( is_main_site() && !defined('DO_NOT_UPGRADE_GLOBAL_TABLES') ) {
-		$prefix = like_escape($wpdb->base_prefix);
-		$wpdb->query( "DELETE FROM $wpdb->usermeta WHERE meta_key LIKE '{$prefix}%meta-box-hidden%' OR meta_key LIKE '{$prefix}%closedpostboxes%' OR meta_key LIKE '{$prefix}%manage-%-columns-hidden%' OR meta_key LIKE '{$prefix}%meta-box-order%' OR meta_key LIKE '{$prefix}%metaboxorder%' OR meta_key LIKE '{$prefix}%screen_layout%'
-					 OR meta_key = 'manageedittagscolumnshidden' OR meta_key='managecategoriescolumnshidden' OR meta_key = 'manageedit-tagscolumnshidden' OR meta_key = 'manageeditcolumnshidden' OR meta_key = 'categories_per_page' OR meta_key = 'edit_tags_per_page'" );
+		$sql = "DELETE FROM $wpdb->usermeta
+			WHERE meta_key LIKE %s
+			OR meta_key LIKE %s
+			OR meta_key LIKE %s
+			OR meta_key LIKE %s
+			OR meta_key LIKE %s
+			OR meta_key LIKE %s
+			OR meta_key = 'manageedittagscolumnshidden'
+			OR meta_key = 'managecategoriescolumnshidden'
+			OR meta_key = 'manageedit-tagscolumnshidden'
+			OR meta_key = 'manageeditcolumnshidden'
+			OR meta_key = 'categories_per_page'
+			OR meta_key = 'edit_tags_per_page'";
+		$prefix = $wpdb->esc_like( $wpdb->base_prefix );
+		$wpdb->query( $wpdb->prepare( $sql,
+			$prefix . '%' . $wpdb->esc_like( 'meta-box-hidden' ) . '%',
+			$prefix . '%' . $wpdb->esc_like( 'closedpostboxes' ) . '%',
+			$prefix . '%' . $wpdb->esc_like( 'manage-'	   ) . '%' . $wpdb->esc_like( '-columns-hidden' ) . '%',
+			$prefix . '%' . $wpdb->esc_like( 'meta-box-order'  ) . '%',
+			$prefix . '%' . $wpdb->esc_like( 'metaboxorder'    ) . '%',
+			$prefix . '%' . $wpdb->esc_like( 'screen_layout'   ) . '%'
+		) );
 	}
 
 }
@@ -1256,30 +1309,19 @@ function upgrade_380() {
 }
 
 /**
- * Execute changes made in WordPress 3.8.3.
+ * Execute changes made in WordPress 4.0.0.
  *
- * @since 3.8.3
+ * @since 4.0.0
  */
-function upgrade_383() {
-	global $wp_current_db_version, $wpdb;
-	if ( $wp_current_db_version < 26692 ) {
-		// Find all lost Quick Draft auto-drafts and promote them to proper drafts.
-		$posts = $wpdb->get_results( "SELECT ID, post_title, post_content FROM $wpdb->posts WHERE post_type = 'post'
-			AND post_status = 'auto-draft' AND post_date >= '2014-04-08 00:00:00'" );
-
-		foreach ( $posts as $post ) {
-			// A regular auto-draft should never have content as that would mean it should have been promoted.
-			// If an auto-draft has content, it's from Quick Draft and it should be recovered.
-			if ( '' === $post->post_content ) {
-				// If it does not have content, we must evaluate whether the title should be recovered.
-				if ( 'Auto Draft' === $post->post_title || __( 'Auto Draft' ) === $post->post_title ) {
-					// This a plain old auto draft. Ignore it.
-					continue;
-				}
+function upgrade_400() {
+	global $wp_current_db_version;
+	if ( $wp_current_db_version < 29630 ) {
+		if ( ! is_multisite() && false === get_option( 'WPLANG' ) ) {
+			if ( defined( 'WPLANG' ) && ( '' !== WPLANG ) && in_array( WPLANG, get_available_languages() ) ) {
+				update_option( 'WPLANG', WPLANG );
+			} else {
+				update_option( 'WPLANG', '' );
 			}
-
-			$wpdb->update( $wpdb->posts, array( 'post_status' => 'draft' ), array( 'ID' => $post->ID ) );
-			clean_post_cache( $post->ID );
 		}
 	}
 }
@@ -1292,20 +1334,23 @@ function upgrade_383() {
 function upgrade_network() {
 	global $wp_current_db_version, $wpdb;
 
-	// Always
+	// Always.
 	if ( is_main_network() ) {
-		// Deletes all expired transients.
-		// The multi-table delete syntax is used to delete the transient record from table a,
-		// and the corresponding transient_timeout record from table b.
+		/*
+		 * Deletes all expired transients. The multi-table delete syntax is used
+		 * to delete the transient record from table a, and the corresponding
+		 * transient_timeout record from table b.
+		 */
 		$time = time();
-		$wpdb->query("DELETE a, b FROM $wpdb->sitemeta a, $wpdb->sitemeta b WHERE
-			a.meta_key LIKE '\_site\_transient\_%' AND
-			a.meta_key NOT LIKE '\_site\_transient\_timeout\_%' AND
-			b.meta_key = CONCAT( '_site_transient_timeout_', SUBSTRING( a.meta_key, 17 ) )
-			AND b.meta_value < $time");
+		$sql = "DELETE a, b FROM $wpdb->sitemeta a, $wpdb->sitemeta b
+			WHERE a.meta_key LIKE %s
+			AND a.meta_key NOT LIKE %s
+			AND b.meta_key = CONCAT( '_site_transient_timeout_', SUBSTRING( a.meta_key, 17 ) )
+			AND b.meta_value < %d";
+		$wpdb->query( $wpdb->prepare( $sql, $wpdb->esc_like( '_site_transient_' ) . '%', $wpdb->esc_like ( '_site_transient_timeout_' ) . '%', $time ) );
 	}
 
-	// 2.8
+	// 2.8.
 	if ( $wp_current_db_version < 11549 ) {
 		$wpmu_sitewide_plugins = get_site_option( 'wpmu_sitewide_plugins' );
 		$active_sitewide_plugins = get_site_option( 'active_sitewide_plugins' );
@@ -1396,13 +1441,20 @@ function upgrade_network() {
  */
 function maybe_create_table($table_name, $create_ddl) {
 	global $wpdb;
-	if ( $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name )
+
+	$query = $wpdb->prepare( "SHOW TABLES LIKE %s", $wpdb->esc_like( $table_name ) );
+
+	if ( $wpdb->get_var( $query ) == $table_name ) {
 		return true;
-	//didn't find it try to create it.
-	$q = $wpdb->query($create_ddl);
-	// we cannot directly tell that whether this succeeded!
-	if ( $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name )
+	}
+
+	// Didn't find it try to create it..
+	$wpdb->query($create_ddl);
+
+	// We cannot directly tell that whether this succeeded!
+	if ( $wpdb->get_var( $query ) == $table_name ) {
 		return true;
+	}
 	return false;
 }
 
@@ -1460,9 +1512,11 @@ function maybe_add_column($table_name, $column_name, $create_ddl) {
 			return true;
 		}
 	}
-	//didn't find it try to create it.
-	$q = $wpdb->query($create_ddl);
-	// we cannot directly tell that whether this succeeded!
+
+	// Didn't find it try to create it.
+	$wpdb->query($create_ddl);
+
+	// We cannot directly tell that whether this succeeded!
 	foreach ($wpdb->get_col("DESC $table_name", 0) as $column ) {
 		if ($column == $column_name) {
 			return true;
@@ -1533,12 +1587,16 @@ function __get_option($setting) {
 function deslash($content) {
 	// Note: \\\ inside a regex denotes a single backslash.
 
-	// Replace one or more backslashes followed by a single quote with
-	// a single quote.
+	/*
+	 * Replace one or more backslashes followed by a single quote with
+	 * a single quote.
+	 */
 	$content = preg_replace("/\\\+'/", "'", $content);
 
-	// Replace one or more backslashes followed by a double quote with
-	// a double quote.
+	/*
+	 * Replace one or more backslashes followed by a double quote with
+	 * a double quote.
+	 */
 	$content = preg_replace('/\\\+"/', '"', $content);
 
 	// Replace one or more backslashes with one backslash.
@@ -1569,6 +1627,14 @@ function dbDelta( $queries = '', $execute = true ) {
 		$queries = explode( ';', $queries );
 		$queries = array_filter( $queries );
 	}
+
+	/**
+	 * Filter the dbDelta SQL queries.
+	 *
+	 * @since 3.3.0
+	 *
+	 * @param array $queries An array of dbDelta SQL queries.
+	 */
 	$queries = apply_filters( 'dbdelta_queries', $queries );
 
 	$cqueries = array(); // Creation Queries
@@ -1590,7 +1656,27 @@ function dbDelta( $queries = '', $execute = true ) {
 			// Unrecognized query type
 		}
 	}
+
+	/**
+	 * Filter the dbDelta SQL queries for creating tables and/or databases.
+	 *
+	 * Queries filterable via this hook contain "CREATE TABLE" or "CREATE DATABASE".
+	 *
+	 * @since 3.3.0
+	 *
+	 * @param array $cqueries An array of dbDelta create SQL queries.
+	 */
 	$cqueries = apply_filters( 'dbdelta_create_queries', $cqueries );
+
+	/**
+	 * Filter the dbDelta SQL queries for inserting or updating.
+	 *
+	 * Queries filterable via this hook contain "INSERT INTO" or "UPDATE".
+	 *
+	 * @since 3.3.0
+	 *
+	 * @param array $iqueries An array of dbDelta insert or update SQL queries.
+	 */
 	$iqueries = apply_filters( 'dbdelta_insert_queries', $iqueries );
 
 	$global_tables = $wpdb->tables( 'global' );
@@ -1609,24 +1695,27 @@ function dbDelta( $queries = '', $execute = true ) {
 		if ( ! $tablefields )
 			continue;
 
-		// Clear the field and index arrays
+		// Clear the field and index arrays.
 		$cfields = $indices = array();
-		// Get all of the field names in the query from between the parens
+
+		// Get all of the field names in the query from between the parentheses.
 		preg_match("|\((.*)\)|ms", $qry, $match2);
 		$qryline = trim($match2[1]);
 
-		// Separate field lines into an array
+		// Separate field lines into an array.
 		$flds = explode("\n", $qryline);
 
+		// todo: Remove this?
 		//echo "<hr/><pre>\n".print_r(strtolower($table), true).":\n".print_r($cqueries, true)."</pre><hr/>";
 
-		// For every field line specified in the query
+		// For every field line specified in the query.
 		foreach ($flds as $fld) {
-			// Extract the field name
+
+			// Extract the field name.
 			preg_match("|^([^ ]*)|", trim($fld), $fvals);
 			$fieldname = trim( $fvals[1], '`' );
 
-			// Verify the found field name
+			// Verify the found field name.
 			$validfield = true;
 			switch (strtolower($fieldname)) {
 			case '':
@@ -1641,17 +1730,19 @@ function dbDelta( $queries = '', $execute = true ) {
 			}
 			$fld = trim($fld);
 
-			// If it's a valid field, add it to the field array
+			// If it's a valid field, add it to the field array.
 			if ($validfield) {
 				$cfields[strtolower($fieldname)] = trim($fld, ", \n");
 			}
 		}
 
-		// For every field in the table
+		// For every field in the table.
 		foreach ($tablefields as $tablefield) {
-			// If the table field exists in the field array...
+
+			// If the table field exists in the field array ...
 			if (array_key_exists(strtolower($tablefield->Field), $cfields)) {
-				// Get the field type from the query
+
+				// Get the field type from the query.
 				preg_match("|".$tablefield->Field." ([^ ]*( unsigned)?)|i", $cfields[strtolower($tablefield->Field)], $matches);
 				$fieldtype = $matches[1];
 
@@ -1663,6 +1754,7 @@ function dbDelta( $queries = '', $execute = true ) {
 				}
 
 				// Get the default value from the array
+					// todo: Remove this?
 					//echo "{$cfields[strtolower($tablefield->Field)]}<br>";
 				if (preg_match("| DEFAULT '(.*?)'|i", $cfields[strtolower($tablefield->Field)], $matches)) {
 					$default_value = $matches[1];
@@ -1673,39 +1765,40 @@ function dbDelta( $queries = '', $execute = true ) {
 					}
 				}
 
-				// Remove the field from the array (so it's not added)
+				// Remove the field from the array (so it's not added).
 				unset($cfields[strtolower($tablefield->Field)]);
 			} else {
 				// This field exists in the table, but not in the creation queries?
 			}
 		}
 
-		// For every remaining field specified for the table
+		// For every remaining field specified for the table.
 		foreach ($cfields as $fieldname => $fielddef) {
-			// Push a query line into $cqueries that adds the field to that table
+			// Push a query line into $cqueries that adds the field to that table.
 			$cqueries[] = "ALTER TABLE {$table} ADD COLUMN $fielddef";
 			$for_update[$table.'.'.$fieldname] = 'Added column '.$table.'.'.$fieldname;
 		}
 
-		// Index stuff goes here
-		// Fetch the table index structure from the database
+		// Index stuff goes here. Fetch the table index structure from the database.
 		$tableindices = $wpdb->get_results("SHOW INDEX FROM {$table};");
 
 		if ($tableindices) {
-			// Clear the index array
+			// Clear the index array.
 			unset($index_ary);
 
-			// For every index in the table
+			// For every index in the table.
 			foreach ($tableindices as $tableindex) {
-				// Add the index to the index data array
+
+				// Add the index to the index data array.
 				$keyname = $tableindex->Key_name;
 				$index_ary[$keyname]['columns'][] = array('fieldname' => $tableindex->Column_name, 'subpart' => $tableindex->Sub_part);
 				$index_ary[$keyname]['unique'] = ($tableindex->Non_unique == 0)?true:false;
 			}
 
-			// For each actual index in the index array
+			// For each actual index in the index array.
 			foreach ($index_ary as $index_name => $index_data) {
-				// Build a create string to compare to the query
+
+				// Build a create string to compare to the query.
 				$index_string = '';
 				if ($index_name == 'PRIMARY') {
 					$index_string .= 'PRIMARY ';
@@ -1717,39 +1810,44 @@ function dbDelta( $queries = '', $execute = true ) {
 					$index_string .= $index_name;
 				}
 				$index_columns = '';
-				// For each column in the index
+
+				// For each column in the index.
 				foreach ($index_data['columns'] as $column_data) {
 					if ($index_columns != '') $index_columns .= ',';
-					// Add the field to the column list string
+
+					// Add the field to the column list string.
 					$index_columns .= $column_data['fieldname'];
 					if ($column_data['subpart'] != '') {
 						$index_columns .= '('.$column_data['subpart'].')';
 					}
 				}
-				// Add the column list to the index create string
+				// Add the column list to the index create string.
 				$index_string .= ' ('.$index_columns.')';
 				if (!(($aindex = array_search($index_string, $indices)) === false)) {
 					unset($indices[$aindex]);
+					// todo: Remove this?
 					//echo "<pre style=\"border:1px solid #ccc;margin-top:5px;\">{$table}:<br />Found index:".$index_string."</pre>\n";
 				}
+				// todo: Remove this?
 				//else echo "<pre style=\"border:1px solid #ccc;margin-top:5px;\">{$table}:<br /><b>Did not find index:</b>".$index_string."<br />".print_r($indices, true)."</pre>\n";
 			}
 		}
 
-		// For every remaining index specified for the table
+		// For every remaining index specified for the table.
 		foreach ( (array) $indices as $index ) {
-			// Push a query line into $cqueries that adds the index to that table
+			// Push a query line into $cqueries that adds the index to that table.
 			$cqueries[] = "ALTER TABLE {$table} ADD $index";
 			$for_update[] = 'Added index ' . $table . ' ' . $index;
 		}
 
-		// Remove the original table creation query from processing
+		// Remove the original table creation query from processing.
 		unset( $cqueries[ $table ], $for_update[ $table ] );
 	}
 
 	$allqueries = array_merge($cqueries, $iqueries);
 	if ($execute) {
 		foreach ($allqueries as $query) {
+			// todo: Remove this?
 			//echo "<pre style=\"border:1px solid #ccc;margin-top:5px;\">".print_r($query, true)."</pre>\n";
 			$wpdb->query($query);
 		}
@@ -1780,7 +1878,7 @@ function make_db_current( $tables = 'all' ) {
  * @since 1.5.0
  */
 function make_db_current_silent( $tables = 'all' ) {
-	$alterations = dbDelta( $tables );
+	dbDelta( $tables );
 }
 
 /**
@@ -1801,9 +1899,10 @@ function make_site_theme_from_oldschool($theme_name, $template) {
 	if (! file_exists("$home_path/index.php"))
 		return false;
 
-	// Copy files from the old locations to the site theme.
-	// TODO: This does not copy arbitrary include dependencies. Only the
-	// standard WP files are copied.
+	/*
+	 * Copy files from the old locations to the site theme.
+	 * TODO: This does not copy arbitrary include dependencies. Only the standard WP files are copied.
+	 */
 	$files = array('index.php' => 'index.php', 'wp-layout.css' => 'style.css', 'wp-comments.php' => 'comments.php', 'wp-comments-popup.php' => 'comments-popup.php');
 
 	foreach ($files as $oldfile => $newfile) {
@@ -1812,12 +1911,15 @@ function make_site_theme_from_oldschool($theme_name, $template) {
 		else
 			$oldpath = ABSPATH;
 
-		if ($oldfile == 'index.php') { // Check to make sure it's not a new index
+		// Check to make sure it's not a new index.
+		if ($oldfile == 'index.php') {
 			$index = implode('', file("$oldpath/$oldfile"));
 			if (strpos($index, 'WP_USE_THEMES') !== false) {
 				if (! @copy(WP_CONTENT_DIR . '/themes/' . WP_DEFAULT_THEME . '/index.php', "$site_dir/$newfile"))
 					return false;
-				continue; // Don't copy anything
+
+				// Don't copy anything.
+				continue;
 				}
 		}
 

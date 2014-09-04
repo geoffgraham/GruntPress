@@ -12,6 +12,12 @@ require_once( dirname( __FILE__ ) . '/admin.php' );
 if ( ! $typenow )
 	wp_die( __( 'Invalid post type' ) );
 
+if ( 'attachment' === $typenow ) {
+	if ( wp_redirect( admin_url( 'upload.php' ) ) ) {
+		exit;
+	}
+}
+
 $post_type = $typenow;
 $post_type_object = get_post_type_object( $post_type );
 
@@ -197,7 +203,7 @@ if ( 'post' == $post_type ) {
 	get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
 	'<p>' . __('<a href="http://codex.wordpress.org/Posts_Screen" target="_blank">Documentation on Managing Posts</a>') . '</p>' .
-	'<p>' . __('<a href="http://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
+	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 	);
 
 } elseif ( 'page' == $post_type ) {
@@ -218,7 +224,7 @@ if ( 'post' == $post_type ) {
 	get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
 	'<p>' . __('<a href="http://codex.wordpress.org/Pages_Screen" target="_blank">Documentation on Managing Pages</a>') . '</p>' .
-	'<p>' . __('<a href="http://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
+	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 	);
 }
 

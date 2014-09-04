@@ -85,7 +85,7 @@ You\'ve been invited to join \'%1$s\' at
 
 Please click the following link to confirm the invite:
 %4$s' );
-			wp_mail( $new_user_email, sprintf( __( '[%s] Joining confirmation' ), get_option( 'blogname' ) ), sprintf( $message, get_option( 'blogname' ), home_url(), wp_specialchars_decode( translate_user_role( $role['name'] ) ), home_url( "/newbloguser/$newuser_key/" ) ) );
+			wp_mail( $new_user_email, sprintf( __( '[%s] Joining confirmation' ), wp_specialchars_decode( get_option( 'blogname' ) ) ), sprintf( $message, get_option( 'blogname' ), home_url(), wp_specialchars_decode( translate_user_role( $role['name'] ) ), home_url( "/newbloguser/$newuser_key/" ) ) );
 			$redirect = add_query_arg( array('update' => 'add'), 'user-new.php' );
 		}
 	}
@@ -171,18 +171,18 @@ get_current_screen()->add_help_tab( array(
 'title'   => __('User Roles'),
 'content' => '<p>' . __('Here is a basic overview of the different user roles and the permissions associated with each one:') . '</p>' .
 				'<ul>' .
-				'<li>' . __('Administrators have access to all the administration features.') . '</li>' .
-				'<li>' . __('Editors can publish posts, manage posts as well as manage other people&#8217;s posts, etc.') . '</li>' .
-				'<li>' . __('Authors can publish and manage their own posts, and are able to upload files.') . '</li>' .
-				'<li>' . __('Contributors can write and manage their posts but not publish posts or upload media files.') . '</li>' .
 				'<li>' . __('Subscribers can read comments/comment/receive newsletters, etc. but cannot create regular site content.') . '</li>' .
+				'<li>' . __('Contributors can write and manage their posts but not publish posts or upload media files.') . '</li>' .
+				'<li>' . __('Authors can publish and manage their own posts, and are able to upload files.') . '</li>' .
+				'<li>' . __('Editors can publish posts, manage posts as well as manage other people&#8217;s posts, etc.') . '</li>' .
+				'<li>' . __('Administrators have access to all the administration features.') . '</li>' .
 				'</ul>'
 ) );
 
 get_current_screen()->set_help_sidebar(
     '<p><strong>' . __('For more information:') . '</strong></p>' .
     '<p>' . __('<a href="http://codex.wordpress.org/Users_Add_New_Screen" target="_blank">Documentation on Adding New Users</a>') . '</p>' .
-    '<p>' . __('<a href="http://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
+    '<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 );
 
 wp_enqueue_script('wp-ajax-response');
@@ -272,11 +272,13 @@ if ( is_multisite() ) {
 	if ( $do_both )
 		echo '<h3 id="add-existing-user">' . __('Add Existing User') . '</h3>';
 	if ( !is_super_admin() ) {
-		_e( 'Enter the email address of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' );
+		echo '<p>' . __( 'Enter the email address of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
 		$label = __('E-mail');
+		$type  = 'email';
 	} else {
-		_e( 'Enter the email address or username of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' );
+		echo '<p>' . __( 'Enter the email address or username of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
 		$label = __('E-mail or Username');
+		$type  = 'text';
 	}
 ?>
 <?php
@@ -286,14 +288,14 @@ if ( is_multisite() ) {
  * @since 3.0.0
  */
 ?>
-<form action="" method="post" name="adduser" id="adduser" class="validate"<?php do_action( 'user_new_form_tag' );?>>
+<form action="" method="post" name="adduser" id="adduser" class="validate" novalidate="novalidate"<?php do_action( 'user_new_form_tag' );?>>
 <input name="action" type="hidden" value="adduser" />
 <?php wp_nonce_field( 'add-user', '_wpnonce_add-user' ) ?>
 
 <table class="form-table">
 	<tr class="form-field form-required">
 		<th scope="row"><label for="adduser-email"><?php echo $label; ?></label></th>
-		<td><input name="email" type="text" id="adduser-email" class="wp-suggest-user" value="" /></td>
+		<td><input name="email" type="<?php echo $type; ?>" id="adduser-email" class="wp-suggest-user" value="" /></td>
 	</tr>
 	<tr class="form-field">
 		<th scope="row"><label for="adduser-role"><?php _e('Role'); ?></label></th>
@@ -305,7 +307,7 @@ if ( is_multisite() ) {
 <?php if ( is_super_admin() ) { ?>
 	<tr>
 		<th scope="row"><label for="adduser-noconfirmation"><?php _e('Skip Confirmation Email') ?></label></th>
-		<td><label for="adduser-noconfirmation"><input type="checkbox" name="noconfirmation" id="adduser-noconfirmation" value="1" /> <?php _e( 'Add the user without sending them a confirmation email.' ); ?></label></td>
+		<td><label for="adduser-noconfirmation"><input type="checkbox" name="noconfirmation" id="adduser-noconfirmation" value="1" /> <?php _e( 'Add the user without sending an email that requires their confirmation.' ); ?></label></td>
 	</tr>
 <?php } ?>
 </table>
@@ -334,21 +336,21 @@ if ( current_user_can( 'create_users') ) {
 ?>
 <p><?php _e('Create a brand new user and add them to this site.'); ?></p>
 <?php /** This action is documented in wp-admin/user-new.php */ ?>
-<form action="" method="post" name="createuser" id="createuser" class="validate"<?php do_action( 'user_new_form_tag' );?>>
+<form action="" method="post" name="createuser" id="createuser" class="validate" novalidate="novalidate"<?php do_action( 'user_new_form_tag' );?>>
 <input name="action" type="hidden" value="createuser" />
 <?php wp_nonce_field( 'create-user', '_wpnonce_create-user' ); ?>
 <?php
 // Load up the passed data, else set to a default.
-foreach ( array( 'user_login' => 'login', 'first_name' => 'firstname', 'last_name' => 'lastname',
-				'email' => 'email', 'url' => 'uri', 'role' => 'role', 'send_password' => 'send_password', 'noconfirmation' => 'ignore_pass' ) as $post_field => $var ) {
-	$var = "new_user_$var";
-	if( isset( $_POST['createuser'] ) ) {
-		if ( ! isset($$var) )
-			$$var = isset( $_POST[$post_field] ) ? wp_unslash( $_POST[$post_field] ) : '';
-	} else {
-		$$var = false;
-	}
-}
+$creating = isset( $_POST['createuser'] );
+
+$new_user_login = $creating && isset( $_POST['user_login'] ) ? wp_unslash( $_POST['user_login'] ) : '';
+$new_user_firstname = $creating && isset( $_POST['first_name'] ) ? wp_unslash( $_POST['first_name'] ) : '';
+$new_user_lastname = $creating && isset( $_POST['last_name'] ) ? wp_unslash( $_POST['last_name'] ) : '';
+$new_user_email = $creating && isset( $_POST['email'] ) ? wp_unslash( $_POST['email'] ) : '';
+$new_user_uri = $creating && isset( $_POST['url'] ) ? wp_unslash( $_POST['url'] ) : '';
+$new_user_role = $creating && isset( $_POST['role'] ) ? wp_unslash( $_POST['role'] ) : '';
+$new_user_send_password = $creating && isset( $_POST['send_password'] ) ? wp_unslash( $_POST['send_password'] ) : '';
+$new_user_ignore_pass = $creating && isset( $_POST['noconfirmation'] ) ? wp_unslash( $_POST['noconfirmation'] ) : '';
 
 ?>
 <table class="form-table">
@@ -358,7 +360,7 @@ foreach ( array( 'user_login' => 'login', 'first_name' => 'firstname', 'last_nam
 	</tr>
 	<tr class="form-field form-required">
 		<th scope="row"><label for="email"><?php _e('E-mail'); ?> <span class="description"><?php _e('(required)'); ?></span></label></th>
-		<td><input name="email" type="text" id="email" value="<?php echo esc_attr($new_user_email); ?>" /></td>
+		<td><input name="email" type="email" id="email" value="<?php echo esc_attr( $new_user_email ); ?>" /></td>
 	</tr>
 <?php if ( !is_multisite() ) { ?>
 	<tr class="form-field">
@@ -371,7 +373,7 @@ foreach ( array( 'user_login' => 'login', 'first_name' => 'firstname', 'last_nam
 	</tr>
 	<tr class="form-field">
 		<th scope="row"><label for="url"><?php _e('Website') ?></label></th>
-		<td><input name="url" type="text" id="url" class="code" value="<?php echo esc_attr($new_user_uri); ?>" /></td>
+		<td><input name="url" type="url" id="url" class="code" value="<?php echo esc_attr( $new_user_uri ); ?>" /></td>
 	</tr>
 <?php
 /**
@@ -395,12 +397,12 @@ if ( apply_filters( 'show_password_fields', true ) ) : ?>
 		<input name="pass2" type="password" id="pass2" autocomplete="off" />
 		<br />
 		<div id="pass-strength-result"><?php _e('Strength indicator'); ?></div>
-		<p class="description indicator-hint"><?php _e('Hint: The password should be at least seven characters long. To make it stronger, use upper and lower case letters, numbers and symbols like ! " ? $ % ^ &amp; ).'); ?></p>
+		<p class="description indicator-hint"><?php _e('Hint: The password should be at least seven characters long. To make it stronger, use upper and lower case letters, numbers, and symbols like ! " ? $ % ^ &amp; ).'); ?></p>
 		</td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="send_password"><?php _e('Send Password?') ?></label></th>
-		<td><label for="send_password"><input type="checkbox" name="send_password" id="send_password" <?php checked( $new_user_send_password ); ?> /> <?php _e('Send this password to the new user by email.'); ?></label></td>
+		<td><label for="send_password"><input type="checkbox" name="send_password" id="send_password" value="1" <?php checked( $new_user_send_password ); ?> /> <?php _e('Send this password to the new user by email.'); ?></label></td>
 	</tr>
 <?php endif; ?>
 <?php } // !is_multisite ?>
@@ -418,7 +420,7 @@ if ( apply_filters( 'show_password_fields', true ) ) : ?>
 	<?php if ( is_multisite() && is_super_admin() ) { ?>
 	<tr>
 		<th scope="row"><label for="noconfirmation"><?php _e('Skip Confirmation Email') ?></label></th>
-		<td><label for="noconfirmation"><input type="checkbox" name="noconfirmation" id="noconfirmation" value="1" <?php checked( $new_user_ignore_pass ); ?> /> <?php _e( 'Add the user without sending them a confirmation email.' ); ?></label></td>
+		<td><label for="noconfirmation"><input type="checkbox" name="noconfirmation" id="noconfirmation" value="1" <?php checked( $new_user_ignore_pass ); ?> /> <?php _e( 'Add the user without sending an email that requires their confirmation.' ); ?></label></td>
 	</tr>
 	<?php } ?>
 </table>

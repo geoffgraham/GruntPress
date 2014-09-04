@@ -63,7 +63,6 @@ case 'add-tag':
 		$location = add_query_arg( 'message', 4, $location );
 	wp_redirect( $location );
 	exit;
-break;
 
 case 'delete':
 	$location = 'edit-tags.php?taxonomy=' . $taxonomy;
@@ -91,8 +90,6 @@ case 'delete':
 	wp_redirect( $location );
 	exit;
 
-break;
-
 case 'bulk-delete':
 	check_admin_referer( 'bulk-tags' );
 
@@ -115,8 +112,6 @@ case 'bulk-delete':
 	$location = add_query_arg( 'message', 6, $location );
 	wp_redirect( $location );
 	exit;
-
-break;
 
 case 'edit':
 	$title = $tax->labels->edit_item;
@@ -160,7 +155,6 @@ case 'editedtag':
 
 	wp_redirect( $location );
 	exit;
-break;
 
 default:
 if ( ! empty($_REQUEST['_wp_http_referer']) ) {
@@ -240,7 +234,7 @@ if ( 'category' == $taxonomy || 'link_category' == $taxonomy || 'post_tag' == $t
 	else
 		$help .= '<p>' . __( '<a href="http://codex.wordpress.org/Posts_Tags_Screen" target="_blank">Documentation on Tags</a>' ) . '</p>';
 
-	$help .= '<p>' . __('<a href="http://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>';
+	$help .= '<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>';
 
 	get_current_screen()->set_help_sidebar( $help );
 
@@ -336,8 +330,12 @@ endif; ?>
 
 <?php if ( 'category' == $taxonomy ) : ?>
 <div class="form-wrap">
-<?php /** This filter is documented in wp-includes/category-template.php */ ?>
-<p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), apply_filters('the_category', get_cat_name(get_option('default_category')))) ?></p>
+<p>
+	<?php
+	/** This filter is documented in wp-includes/category-template.php */
+	printf( __( '<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.' ), apply_filters( 'the_category', get_cat_name( get_option( 'default_category') ) ) );
+	?>
+</p>
 <?php if ( current_user_can( 'import' ) ) : ?>
 <p><?php printf(__('Categories can be selectively converted to tags using the <a href="%s">category to tag converter</a>.'), 'import.php') ?></p>
 <?php endif; ?>
@@ -370,7 +368,7 @@ do_action( "after-{$taxonomy}-table", $taxonomy );
 
 if ( !is_null( $tax->labels->popular_items ) ) {
 	if ( current_user_can( $tax->cap->edit_terms ) )
-		$tag_cloud = wp_tag_cloud( array( 'taxonomy' => $taxonomy, 'echo' => false, 'link' => 'edit' ) );
+		$tag_cloud = wp_tag_cloud( array( 'taxonomy' => $taxonomy, 'post_type' => $post_type, 'echo' => false, 'link' => 'edit' ) );
 	else
 		$tag_cloud = wp_tag_cloud( array( 'taxonomy' => $taxonomy, 'echo' => false ) );
 

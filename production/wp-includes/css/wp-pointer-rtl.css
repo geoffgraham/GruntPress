@@ -5,7 +5,7 @@
 	background: #fff;
 	border: 1px solid #dfdfdf;
 	-webkit-box-shadow: 0 3px 6px rgba(0,0,0,0.075);
-	box-shadow:         0 3px 6px rgba(0,0,0,0.075);
+	box-shadow: 0 3px 6px rgba(0,0,0,0.075);
 }
 
 .wp-pointer-content h3 {
@@ -22,6 +22,7 @@
 
 .wp-pointer-content h3:before {
 	background: #fff;
+	-webkit-border-radius: 50%;
 	border-radius: 50%;
 	color: #2ea2cc;
 	content: '\f227';
@@ -59,11 +60,13 @@
 }
 
 .wp-pointer-buttons a.close:before {
+	background: none;
+	color: #bbb;
 	content: '\f153';
 	display: block !important;
 	font: normal 13px/1 'dashicons';
 	speak: none;
-	margin: 2px 0;
+	margin: 1px 0;
 	text-align: center;
 	-webkit-font-smoothing: antialiased !important;
 	width: 10px;
@@ -71,6 +74,10 @@
 	position: absolute;
 	right: -12px;
 	top: 1px;
+}
+
+.wp-pointer-buttons a.close:hover:before {
+	color: #c00;
 }
 
 /* The arrow base class must take up no space, even with transparent borders. */
@@ -99,6 +106,7 @@
 }
 
 .wp-pointer-bottom {
+	margin-top: -13px;
 	padding-bottom: 13px;
 }
 
@@ -108,6 +116,7 @@
 }
 /* @noflip */
 .wp-pointer-right {
+	margin-left: -13px;
 	padding-right: 13px;
 }
 
@@ -132,10 +141,11 @@
 	border-bottom-color: #3592b6;
 }
 
-.wp-pointer-top .wp-pointer-arrow:before,
-.wp-pointer-undefined .wp-pointer-arrow:before {
+.wp-pointer-top .wp-pointer-arrow-inner,
+.wp-pointer-undefined .wp-pointer-arrow-inner {
+	top: 1px;
 	margin-right: -13px;
-	margin-top: -11px;
+	margin-top: -13px;
 	border: 13px solid transparent;
 	border-bottom-color: #2ea2cc;
 	display: block;
@@ -148,9 +158,10 @@
 	border-top-color: #ccc;
 }
 
-.wp-pointer-bottom .wp-pointer-arrow:before {
+.wp-pointer-bottom .wp-pointer-arrow-inner {
+	bottom: 1px;
 	margin-right: -13px;
-	margin-top: -14px;
+	margin-bottom: -13px;
 	border: 13px solid transparent;
 	border-top-color: #fff;
 	display: block;
@@ -164,27 +175,31 @@
 	border-right-color: #ccc;
 }
 
-.wp-pointer-left .wp-pointer-arrow:before {
-	margin-right: -12px;
+/* @noflip */
+.wp-pointer-left .wp-pointer-arrow-inner {
+	left: 1px;
+	margin-left: -13px;
 	margin-top: -13px;
 	border: 13px solid transparent;
-	border-left-color: #fff;
+	border-right-color: #fff;
 	display: block;
 	content: ' ';
 }
 
 /* @noflip */
 .wp-pointer-right .wp-pointer-arrow {
-	right:0;
+	right: 0;
 	border-width: 13px 0 13px 13px;
 	border-left-color: #ccc;
 }
 
-.wp-pointer-right .wp-pointer-arrow:before {
-	margin-right: -14px;
+/* @noflip */
+.wp-pointer-right .wp-pointer-arrow-inner {
+	right: 1px;
+	margin-right: -13px;
 	margin-top: -13px;
 	border: 13px solid transparent;
-	border-right-color: #fff;
+	border-left-color: #fff;
 	display: block;
 	content: ' ';
 }

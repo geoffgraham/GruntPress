@@ -7,9 +7,9 @@
  */
 
 /**
- * Selects the first update version from the update_core option
+ * Selects the first update version from the update_core option.
  *
- * @return object the response from the API
+ * @return bool|object The response from the API on success, false on failure.
  */
 function get_preferred_from_update_core() {
 	$updates = get_core_updates();
@@ -21,11 +21,11 @@ function get_preferred_from_update_core() {
 }
 
 /**
- * Get available core updates
+ * Get available core updates.
  *
  * @param array $options Set $options['dismissed'] to true to show dismissed upgrades too,
  * 	set $options['available'] to false to skip not-dismissed updates.
- * @return array Array of the update objects
+ * @return bool|array Array of the update objects on success, false on failure.
  */
 function get_core_updates( $options = array() ) {
 	$options = array_merge( array( 'available' => true, 'dismissed' => false ), $options );
@@ -74,7 +74,7 @@ function find_core_auto_update() {
 	if ( ! $updates || empty( $updates->updates ) )
 		return false;
 
-	include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+	include_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' );
 
 	$auto_update = false;
 	$upgrader = new WP_Automatic_Updater;
@@ -101,8 +101,6 @@ function find_core_auto_update() {
  * @return bool|array False on failure. An array of checksums on success.
  */
 function get_core_checksums( $version, $locale ) {
-	$return = array();
-
 	$url = $http_url = 'http://api.wordpress.org/core/checksums/1.0/?' . http_build_query( compact( 'version', 'locale' ), null, '&' );
 
 	if ( $ssl = wp_http_supports( array( 'ssl' ) ) )
@@ -114,7 +112,7 @@ function get_core_checksums( $version, $locale ) {
 
 	$response = wp_remote_get( $url, $options );
 	if ( $ssl && is_wp_error( $response ) ) {
-		trigger_error( __( 'An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="http://wordpress.org/support/">support forums</a>.' ) . ' ' . '(WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.)', headers_sent() || WP_DEBUG ? E_USER_WARNING : E_USER_NOTICE );
+		trigger_error( __( 'An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="https://wordpress.org/support/">support forums</a>.' ) . ' ' . __( '(WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.)' ), headers_sent() || WP_DEBUG ? E_USER_WARNING : E_USER_NOTICE );
 		$response = wp_remote_get( $http_url, $options );
 	}
 
@@ -181,16 +179,13 @@ function core_update_footer( $msg = '' ) {
 	switch ( $cur->response ) {
 	case 'development' :
 		return sprintf( __( 'You are using a development version (%1$s). Cool! Please <a href="%2$s">stay updated</a>.' ), get_bloginfo( 'version', 'display' ), network_admin_url( 'update-core.php' ) );
-	break;
 
 	case 'upgrade' :
 		return sprintf( '<strong>'.__( '<a href="%1$s">Get Version %2$s</a>' ).'</strong>', network_admin_url( 'update-core.php' ), $cur->current);
-	break;
 
 	case 'latest' :
 	default :
 		return sprintf( __( 'Version %s' ), get_bloginfo( 'version', 'display' ) );
-	break;
 	}
 }
 add_filter( 'update_footer', 'core_update_footer' );
@@ -221,7 +216,12 @@ add_action( 'network_admin_notices', 'update_nag', 3 );
 
 // Called directly from dashboard
 function update_right_now_message() {
-	$msg = sprintf( __( 'You are using <span class="b">WordPress %s</span>.' ), get_bloginfo( 'version', 'display' ) );
+	$theme_name = wp_get_theme();
+	if ( current_user_can( 'switch_themes' ) ) {
+		$theme_name = sprintf( '<a href="themes.php">%1$s</a>', $theme_name );
+	}
+
+	$msg = sprintf( __( 'WordPress %1$s running %2$s theme.' ), get_bloginfo( 'version', 'display' ), $theme_name );
 
 	if ( current_user_can('update_core') ) {
 		$cur = get_preferred_from_update_core();
@@ -230,7 +230,7 @@ function update_right_now_message() {
 			$msg .= " <a href='" . network_admin_url( 'update-core.php' ) . "' class='button'>" . sprintf( __('Update to %s'), $cur->current ? $cur->current : __( 'Latest' ) ) . '</a>';
 	}
 
-	echo "<span id='wp-version-message'>$msg</span>";
+	echo "<p id='wp-version-message'>$msg</p>";
 }
 
 function get_plugin_updates() {
@@ -327,7 +327,6 @@ function wp_plugin_update_row( $file, $plugin_data ) {
 }
 
 function get_theme_updates() {
-	$themes = wp_get_themes();
 	$current = get_site_transient('update_themes');
 
 	if ( ! isset( $current->response ) )
@@ -362,8 +361,6 @@ function wp_theme_update_row( $theme_key, $theme ) {
 	if ( !isset( $current->response[ $theme_key ] ) )
 		return false;
 	$r = $current->response[ $theme_key ];
-	$themes_allowedtags = array('a' => array('href' => array(),'title' => array()),'abbr' => array('title' => array()),'acronym' => array('title' => array()),'code' => array(),'em' => array(),'strong' => array());
-	$theme_name = wp_kses( $theme['Name'], $themes_allowedtags );
 
 	$details_url = add_query_arg( array( 'TB_iframe' => 'true', 'width' => 1024, 'height' => 800 ), $current->response[ $theme_key ]['url'] );
 
@@ -401,7 +398,7 @@ function wp_theme_update_row( $theme_key, $theme ) {
 }
 
 function maintenance_nag() {
-	include ABSPATH . WPINC . '/version.php'; // include an unmodified $wp_version
+	include( ABSPATH . WPINC . '/version.php' ); // include an unmodified $wp_version
 	global $upgrading;
 	$nag = isset( $upgrading );
 	if ( ! $nag ) {

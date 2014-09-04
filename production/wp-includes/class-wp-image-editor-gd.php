@@ -18,7 +18,7 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 
 	protected $image = false; // GD Resource
 
-	function __destruct() {
+	public function __destruct() {
 		if ( $this->image ) {
 			// we don't need the original in memory anymore
 			imagedestroy( $this->image );
@@ -114,7 +114,7 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 		$this->update_size( $size[0], $size[1] );
 		$this->mime_type = $size['mime'];
 
-		return $this->set_quality( $this->quality );
+		return true;
 	}
 
 	/**
@@ -140,12 +140,16 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 	 * Resizes current image.
 	 * Wraps _resize, since _resize returns a GD Resource.
 	 *
+	 * At minimum, either a height or width must be provided.
+	 * If one of the two is set to null, the resize will
+	 * maintain aspect ratio according to the provided dimension.
+	 *
 	 * @since 3.5.0
 	 * @access public
 	 *
-	 * @param int $max_w
-	 * @param int $max_h
-	 * @param boolean $crop
+	 * @param  int|null $max_w Image width.
+	 * @param  int|null $max_h Image height.
+	 * @param  boolean  $crop
 	 * @return boolean|WP_Error
 	 */
 	public function resize( $max_w, $max_h, $crop = false ) {
@@ -192,24 +196,37 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 	 * @param array $sizes {
 	 *     An array of image size arrays. Default sizes are 'small', 'medium', 'large'.
 	 *
+	 *     Either a height or width must be provided.
+	 *     If one of the two is set to null, the resize will
+	 *     maintain aspect ratio according to the provided dimension.
+	 *
 	 *     @type array $size {
-	 *         @type int  $width  Image width.
-	 *         @type int  $height Image height.
-	 *         @type bool $crop   Optional. Whether to crop the image. Default false.
+	 *         @type int  ['width']  Optional. Image width.
+	 *         @type int  ['height'] Optional. Image height.
+	 *         @type bool ['crop']   Optional. Whether to crop the image. Default false.
 	 *     }
 	 * }
-	 * @return array An array of resized images metadata by size.
+	 * @return array An array of resized images' metadata by size.
 	 */
 	public function multi_resize( $sizes ) {
 		$metadata = array();
 		$orig_size = $this->size;
 
 		foreach ( $sizes as $size => $size_data ) {
-			if ( ! ( isset( $size_data['width'] ) && isset( $size_data['height'] ) ) )
+			if ( ! isset( $size_data['width'] ) && ! isset( $size_data['height'] ) ) {
 				continue;
+			}
 
-			if ( ! isset( $size_data['crop'] ) )
+			if ( ! isset( $size_data['width'] ) ) {
+				$size_data['width'] = null;
+			}
+			if ( ! isset( $size_data['height'] ) ) {
+				$size_data['height'] = null;
+			}
+
+			if ( ! isset( $size_data['crop'] ) ) {
 				$size_data['crop'] = false;
+			}
 
 			$image = $this->_resize( $size_data['width'], $size_data['height'], $size_data['crop'] );
 
@@ -370,7 +387,7 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 				return new WP_Error( 'image_save_error', __('Image Editor Save Failed') );
 		}
 		elseif ( 'image/jpeg' == $mime_type ) {
-			if ( ! $this->make_image( $filename, 'imagejpeg', array( $image, $filename, $this->quality ) ) )
+			if ( ! $this->make_image( $filename, 'imagejpeg', array( $image, $filename, $this->get_quality() ) ) )
 				return new WP_Error( 'image_save_error', __('Image Editor Save Failed') );
 		}
 		else {
@@ -418,7 +435,7 @@ class WP_Image_Editor_GD extends WP_Image_Editor {
 				return imagegif( $this->image );
 			default:
 				header( 'Content-Type: image/jpeg' );
-				return imagejpeg( $this->image, null, $this->quality );
+				return imagejpeg( $this->image, null, $this->get_quality() );
 		}
 	}
 
